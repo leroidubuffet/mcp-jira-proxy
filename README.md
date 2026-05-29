@@ -1,9 +1,9 @@
 # mcp-jira-proxy
 
-Dos herramientas para trabajar con servidores MCP (Model Context Protocol) en Claude Code:
+Este repositorio tiene dos herramientas para trabajar con servidores MCP (Model Context Protocol):
 
 - **`jira_mcp_server.py`**: Servidor MCP para Jira Cloud. Sin dependencias externas (Python stdlib puro).
-- **`mcp_proxy.py`**: Proxy MCP educativo. Se interpone entre Claude y cualquier servidor MCP, deja pasar todo sin modificarlo y escribe un log en lenguaje natural de cada mensaje del protocolo.
+- **`mcp_proxy.py`**: Proxy MCP demostrativo. Se interpone entre el agente y cualquier servidor MCP, deja pasar todo sin modificarlo y escribe un log en lenguaje natural de cada mensaje del protocolo.
 
 ---
 
@@ -61,16 +61,16 @@ Un proxy transparente que registra cada mensaje del protocolo MCP en lenguaje na
 ### Cómo funciona
 
 ```
-Claude Code → [mcp_proxy.py] → [servidor MCP real]
+Agente → [mcp_proxy.py] → [servidor MCP real]
                     ↓
              /tmp/mcp_jira.log  (log en lenguaje natural)
 ```
 
-El proxy no modifica ningún mensaje. Claude recibe exactamente las mismas respuestas que recibiría hablando directamente con el servidor real.
+El proxy no modifica ningún mensaje. El agente recibe exactamente las mismas respuestas que recibiría hablando directamente con el servidor real.
 
 ### Configuración
 
-Los servidores MCP se configuran en `~/.claude.json`. Para ver qué servidores tienes activos:
+En Claude, los servidores MCP se configuran en `~/.claude.json`. Para ver qué servidores tienes activos:
 
 ```bash
 cat ~/.claude.json
