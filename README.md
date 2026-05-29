@@ -70,11 +70,44 @@ El proxy no modifica ningún mensaje. Claude recibe exactamente las mismas respu
 
 ### Configuración
 
-Sustituye el servidor real por el proxy en `~/.claude.json`:
+Los servidores MCP se configuran en `~/.claude.json`. Para ver qué servidores tienes activos:
+
+```bash
+cat ~/.claude.json
+```
+
+Busca el bloque `mcpServers`. Cada entrada tiene este aspecto:
 
 ```json
 {
   "mcpServers": {
+    "nombre-del-servidor": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/ruta/al/servidor.py"],
+      "env": { ... }
+    }
+  }
+}
+```
+
+Los valores de `command`, `args` y `env` de esa entrada son los que necesitas para configurar el proxy: se copian en `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y en el bloque `env` del proxy respectivamente.
+
+Añade una nueva entrada para el proxy **sin eliminar la original** — así puedes usar ambos a la vez:
+
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/ruta/a/jira_mcp_server.py"],
+      "env": {
+        "JIRA_URL": "https://tu-empresa.atlassian.net",
+        "JIRA_EMAIL": "tu@empresa.com",
+        "JIRA_API_TOKEN": "tu-token"
+      }
+    },
     "jira-proxy": {
       "type": "stdio",
       "command": "python3",
