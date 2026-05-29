@@ -52,8 +52,6 @@ Python 3.10+ (usa `dict | None` en las firmas de tipo). No requiere `pip install
 
 > **Nota macOS:** el servidor resuelve automáticamente el problema de certificados SSL del instalador oficial de Python en macOS, cargando los certificados del sistema desde `/etc/ssl/cert.pem`.
 
-> **Migración de API (mayo 2026):** Atlassian eliminó el endpoint `POST /rest/api/3/search`. El servidor usa el nuevo endpoint `POST /rest/api/3/search/jql`. Si tienes una versión anterior del servidor, actualiza la línea correspondiente en `tool_search_issues` o descarga la versión actualizada.
-
 ---
 
 ## mcp_proxy.py
