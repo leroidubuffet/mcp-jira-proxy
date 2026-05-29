@@ -2,8 +2,8 @@
 
 Dos herramientas para trabajar con servidores MCP (Model Context Protocol) en Claude Code:
 
-- **`jira_mcp_server.py`** — Servidor MCP para Jira Cloud. Sin dependencias externas (Python stdlib puro).
-- **`mcp_proxy.py`** — Proxy MCP educativo. Se interpone entre Claude y cualquier servidor MCP, deja pasar todo sin modificarlo y escribe un log en lenguaje natural de cada mensaje del protocolo.
+- **`jira_mcp_server.py`**: Servidor MCP para Jira Cloud. Sin dependencias externas (Python stdlib puro).
+- **`mcp_proxy.py`**: Proxy MCP educativo. Se interpone entre Claude y cualquier servidor MCP, deja pasar todo sin modificarlo y escribe un log en lenguaje natural de cada mensaje del protocolo.
 
 ---
 
@@ -44,7 +44,7 @@ Añade esto a `~/.claude.json`:
 }
 ```
 
-Genera un API token en [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
+Si no tienes uno, genera un API token en [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
 
 ### Requisitos
 
