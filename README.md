@@ -100,7 +100,7 @@ Sustituye el servidor real por el proxy en `~/.claude.json`:
 
 ### Ver el log en tiempo real
 
-En una segunda terminal:
+En otro terminal:
 
 ```bash
 tail -f /tmp/mcp_jira.log
