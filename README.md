@@ -186,6 +186,19 @@ El proxy no es específico de Jira. Apunta `MCP_PROXY_CMD` y `MCP_PROXY_ARGS` a 
 "MCP_PROXY_ARGS": "-y @modelcontextprotocol/server-filesystem /tmp"
 ```
 
+**El proxy es un wrapper por servidor, no un interceptor global.** Solo registra el tráfico del servidor que tiene configurado en `MCP_PROXY_CMD`. El resto de servidores MCP activos (Puppeteer, Gmail, etc.) siguen comunicándose directamente con Claude sin pasar por el proxy.
+
+Para monitorizar varios servidores a la vez, añade una entrada de proxy separada para cada uno:
+
+```json
+{
+  "mcpServers": {
+    "jira-proxy":    { "env": { "MCP_PROXY_CMD": "python3", "MCP_PROXY_ARGS": "/ruta/jira_mcp_server.py",  "MCP_PROXY_LOG": "/tmp/mcp_jira.log",    ... } },
+    "ableton-proxy": { "env": { "MCP_PROXY_CMD": "uvx",     "MCP_PROXY_ARGS": "ableton-mcp",               "MCP_PROXY_LOG": "/tmp/mcp_ableton.log", ... } }
+  }
+}
+```
+
 ---
 
 ## El protocolo MCP en un diagrama
