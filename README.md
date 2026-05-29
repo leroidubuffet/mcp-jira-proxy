@@ -1,31 +1,39 @@
 # mcp-jira-proxy
 
-Este repositorio tiene dos herramientas para trabajar con servidores MCP (Model Context Protocol):
+Dos archivos Python. Cero dependencias externas.
 
-- **`jira_mcp_server.py`**: Servidor MCP para Jira Cloud. Sin dependencias externas (Python stdlib puro).
-- **`mcp_proxy.py`**: Proxy MCP demostrativo. Se interpone entre el agente y cualquier servidor MCP, deja pasar todo sin modificarlo y escribe un log en lenguaje natural de cada mensaje del protocolo.
+| Archivo | Qué hace |
+|---|---|
+| `jira_mcp_server.py` | Servidor MCP que conecta cualquier agente IA con la API de Jira Cloud |
+| `mcp_proxy.py` | Proxy educativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
 
 ---
 
 ## jira_mcp_server.py
 
-### Herramientas expuestas
+### Herramientas disponibles
 
 | Tool | Descripción |
 |---|---|
-| `get_issue` | Detalle completo de un issue de Jira |
+| `get_issue` | Detalle completo de un issue |
 | `search_issues` | Búsqueda con JQL |
 | `get_my_issues` | Issues asignados al usuario autenticado |
-| `create_issue` | Crea una Task, Bug, Story o Epic |
-| `add_comment` | Añade un comentario a un issue |
-| `transition_issue` | Mueve un issue a un nuevo estado |
+| `create_issue` | Crea una Task, Story, Epic… |
+| `add_comment` | Añade un comentario |
+| `transition_issue` | Mueve un issue a otro estado |
 | `update_issue` | Actualiza título, descripción, prioridad o asignado |
 | `get_projects` | Lista los proyectos accesibles |
-| `get_issue_comments` | Lee todos los comentarios de un issue |
+| `get_issue_comments` | Lee los comentarios de un issue |
 
-### Configuración
+### Requisitos
 
-Añade esto a `~/.claude.json`:
+Python 3.10+. No requiere `pip install`.
+
+> **macOS:** el servidor carga automáticamente los certificados SSL del sistema desde `/etc/ssl/cert.pem`, resolviendo el problema habitual del instalador oficial de Python.
+
+### Configuración en Claude Code
+
+Genera un API token en [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) y añade esto a `~/.claude.json`:
 
 ```json
 {
@@ -33,7 +41,7 @@ Añade esto a `~/.claude.json`:
     "jira": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/ruta/a/jira_mcp_server.py"],
+      "args": ["/ruta/absoluta/a/jira_mcp_server.py"],
       "env": {
         "JIRA_URL": "https://tu-empresa.atlassian.net",
         "JIRA_EMAIL": "tu@empresa.com",
@@ -44,80 +52,59 @@ Añade esto a `~/.claude.json`:
 }
 ```
 
-Si no tienes uno, genera un API token en [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens).
-
-### Requisitos
-
-Python 3.10+ (usa `dict | None` en las firmas de tipo). No requiere `pip install`.
-
-> **Nota macOS:** el servidor resuelve automáticamente el problema de certificados SSL del instalador oficial de Python en macOS, cargando los certificados del sistema desde `/etc/ssl/cert.pem`.
+Reinicia Claude Code. Las herramientas aparecerán como `mcp__jira__get_issue`, `mcp__jira__create_issue`, etc.
 
 ---
 
 ## mcp_proxy.py
 
-Un proxy transparente que registra cada mensaje del protocolo MCP en lenguaje natural. Útil para entender qué ocurre exactamente cuando Claude llama a una herramienta.
+### Para qué sirve
+
+Permite ver en tiempo real qué mensajes intercambian el agente y un servidor MCP, traducidos a lenguaje natural. Útil para entender el protocolo o depurar integraciones.
 
 ### Cómo funciona
 
+Sin proxy, Claude Code lanza y habla directamente con el servidor MCP:
+
 ```
-Agente → [mcp_proxy.py] → [servidor MCP real]
+Claude Code  ──────────────────────────────→  jira_mcp_server.py  →  Jira
+             (entrada "jira" en ~/.claude.json)
+```
+
+Con proxy, Claude Code lanza el proxy, y el proxy lanza el servidor real. El servidor Jira sigue siendo necesario — solo cambia quién lo arranca:
+
+```
+Claude Code  ──────────────→  mcp_proxy.py  ──→  jira_mcp_server.py  →  Jira
+             (entrada          (lanzado por         (lanzado por
+             "jira-proxy"      Claude Code)          el proxy)
+             en ~/.claude.json)
+                    │
                     ↓
-             /tmp/mcp_jira.log  (log en lenguaje natural)
+             /tmp/mcp_jira.log
+             (log explicado)
 ```
 
-El proxy no modifica ningún mensaje. El agente recibe exactamente las mismas respuestas que recibiría hablando directamente con el servidor real.
+El proxy no modifica ningún mensaje. El agente recibe exactamente las mismas respuestas.
 
-### Configuración
+### Configuración en Claude Code
 
-En Claude, los servidores MCP se configuran en `~/.claude.json`. Para ver qué servidores tienes activos:
+**Paso 1.** Elimina la entrada `jira` directa de `~/.claude.json` y añade `jira-proxy` en su lugar. Si los dos coexisten, Claude Code usará el directo y el proxy no recibirá ningún tráfico.
 
-```bash
-cat ~/.claude.json
-```
-
-Busca el bloque `mcpServers`. Cada entrada tiene este aspecto:
+**Paso 2.** La entrada del proxy necesita los mismos parámetros que tenía el servidor directo, más tres variables propias (`MCP_PROXY_CMD`, `MCP_PROXY_ARGS`, `MCP_PROXY_LOG`):
 
 ```json
 {
   "mcpServers": {
-    "nombre-del-servidor": {
-      "type": "stdio",
-      "command": "python3",
-      "args": ["/ruta/al/servidor.py"],
-      "env": { ... }
-    }
-  }
-}
-```
-
-Los valores de `command`, `args` y `env` de esa entrada son los que necesitas para configurar el proxy: se copian en `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y en el bloque `env` del proxy respectivamente.
-
-**Importante:** si tienes `jira` y `jira-proxy` activos al mismo tiempo, Claude elegirá el servidor directo y el proxy no se usará. Para que el tráfico pase por el proxy, elimina la entrada `jira` de `mcpServers` y deja solo `jira-proxy`:
-
-```json
-{
-  "mcpServers": {
-    "jira": {
-      "type": "stdio",
-      "command": "python3",
-      "args": ["/ruta/a/jira_mcp_server.py"],
-      "env": {
-        "JIRA_URL": "https://tu-empresa.atlassian.net",
-        "JIRA_EMAIL": "tu@empresa.com",
-        "JIRA_API_TOKEN": "tu-token"
-      }
-    },
     "jira-proxy": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/ruta/a/mcp_proxy.py"],
+      "args": ["/ruta/absoluta/a/mcp_proxy.py"],
       "env": {
-        "MCP_PROXY_CMD": "python3",
-        "MCP_PROXY_ARGS": "/ruta/a/jira_mcp_server.py",
-        "MCP_PROXY_LOG": "/tmp/mcp_jira.log",
-        "JIRA_URL": "https://tu-empresa.atlassian.net",
-        "JIRA_EMAIL": "tu@empresa.com",
+        "MCP_PROXY_CMD":  "python3",
+        "MCP_PROXY_ARGS": "/ruta/absoluta/a/jira_mcp_server.py",
+        "MCP_PROXY_LOG":  "/tmp/mcp_jira.log",
+        "JIRA_URL":       "https://tu-empresa.atlassian.net",
+        "JIRA_EMAIL":     "tu@empresa.com",
         "JIRA_API_TOKEN": "tu-token"
       }
     }
@@ -125,21 +112,18 @@ Los valores de `command`, `args` y `env` de esa entrada son los que necesitas pa
 }
 ```
 
-| Variable | Descripción |
-|---|---|
-| `MCP_PROXY_CMD` | Comando para lanzar el servidor real (obligatorio) |
-| `MCP_PROXY_ARGS` | Argumentos del servidor real separados por espacios |
-| `MCP_PROXY_LOG` | Ruta del fichero de log (por defecto `/tmp/mcp_proxy.log`) |
+> **Rutas con espacios:** si la ruta contiene espacios, escríbela entre comillas simples dentro del valor:
+> `"MCP_PROXY_ARGS": "'/ruta/con espacios/jira_mcp_server.py'"`
 
-### Ver el log en tiempo real
+**Paso 3.** Reinicia Claude Code.
 
-En otro terminal:
+**Paso 4.** En otro terminal, abre el log antes de empezar a usar el agente:
 
 ```bash
 tail -f /tmp/mcp_jira.log
 ```
 
-### Ejemplo de salida
+### Ejemplo de log
 
 ```
 ════════════════════════════════════════════════════════════
@@ -150,17 +134,28 @@ tail -f /tmp/mcp_jira.log
 ────────────────────────────────────────────────────────────
 [10:36:27.072]  🤝  Claude → Servidor   [initialize]
   HANDSHAKE — Claude se conecta al servidor
-  Cliente: Claude Code 1.0
-  Versión del protocolo solicitada: 2024-11-05
-  El servidor responderá confirmando qué tipos de primitivas soporta (tools, resources, prompts).
+  Cliente: claude-code 2.1.156
+  Versión del protocolo solicitada: 2025-11-25
+  El servidor responderá confirmando qué tipos de primitivas soporta.
   Las tools concretas se piden en un mensaje tools/list separado.
 
 ────────────────────────────────────────────────────────────
 [10:36:27.143]  ←  Servidor → Claude   [respuesta a initialize]
   ✅ Servidor identificado: jira v1.0.0
-  Protocolo acordado: 2024-11-05
+  Protocolo acordado: 2025-11-25
   Capacidades: tools (Claude puede llamar funciones)
-  A partir de aquí Claude puede pedir el catálogo y llamar tools.
+
+────────────────────────────────────────────────────────────
+[10:36:27.200]  📋  Claude → Servidor   [tools/list]
+  CATÁLOGO — Claude pide las herramientas disponibles
+
+────────────────────────────────────────────────────────────
+[10:36:27.250]  ←  Servidor → Claude   [respuesta a tools/list]
+  ✅ 9 herramientas registradas:
+     • get_issue
+     • search_issues
+     • create_issue
+     • ...
 
 ────────────────────────────────────────────────────────────
 [10:36:28.301]  ⚡  Claude → Servidor   [tools/call]
@@ -175,42 +170,37 @@ tail -f /tmp/mcp_jira.log
   ⏱  312 ms
 ```
 
-### Compatible con cualquier servidor MCP
+### Usar el proxy con otros servidores MCP
 
-El proxy no es específico de Jira. Apunta `MCP_PROXY_CMD` y `MCP_PROXY_ARGS` a cualquier servidor MCP con transporte stdio:
-
-```json
-"MCP_PROXY_CMD": "npx",
-"MCP_PROXY_ARGS": "-y @modelcontextprotocol/server-filesystem /tmp"
-```
-
-**El proxy es un wrapper por servidor, no un interceptor global.** Solo registra el tráfico del servidor que tiene configurado en `MCP_PROXY_CMD`. El resto de servidores MCP activos (Puppeteer, Gmail, etc.) siguen comunicándose directamente con Claude sin pasar por el proxy.
-
-Para monitorizar varios servidores a la vez, añade una entrada de proxy separada para cada uno:
+El proxy no contiene ningún código específico de Jira — funciona con cualquier servidor MCP con transporte stdio. Cambia `MCP_PROXY_CMD` y `MCP_PROXY_ARGS` para apuntar al servidor que quieras observar:
 
 ```json
-{
-  "mcpServers": {
-    "jira-proxy":    { "env": { "MCP_PROXY_CMD": "python3", "MCP_PROXY_ARGS": "/ruta/jira_mcp_server.py",  "MCP_PROXY_LOG": "/tmp/mcp_jira.log",    ... } },
-    "ableton-proxy": { "env": { "MCP_PROXY_CMD": "uvx",     "MCP_PROXY_ARGS": "ableton-mcp",               "MCP_PROXY_LOG": "/tmp/mcp_ableton.log", ... } }
-  }
-}
+"MCP_PROXY_CMD":  "uvx",
+"MCP_PROXY_ARGS": "ableton-mcp",
+"MCP_PROXY_LOG":  "/tmp/mcp_ableton.log"
 ```
+
+El proxy es un wrapper **por servidor**, no un interceptor global. Cada servidor que quieras monitorizar necesita su propia entrada en `mcpServers`.
 
 ---
 
-## El protocolo MCP en un diagrama
+## El protocolo MCP
+
+Lo que el proxy registra es el protocolo MCP en bruto: mensajes JSON-RPC 2.0 intercambiados por stdio. El flujo completo de una sesión:
 
 ```
-Claude Code               Servidor MCP              Sistema externo
-    │                          │                           │
-    │── initialize ───────────→│                           │
-    │←─ {capacidades} ─────────│                           │
-    │── tools/list ───────────→│                           │
-    │←─ [{nombre, schema}...] ─│                           │
-    │── tools/call ───────────→│── HTTP / SDK / socket ───→│
-    │                          │←─ respuesta ──────────────│
-    │←─ {content: [{text}]} ───│                           │
+Agente                    Servidor MCP              Sistema externo
+  │                            │                          │
+  │─── initialize ────────────→│                          │
+  │←── {serverInfo, caps} ─────│                          │
+  │─── tools/list ────────────→│                          │
+  │←── [{name, description,    │                          │
+  │      inputSchema}...] ─────│                          │
+  │                            │                          │
+  │─── tools/call ────────────→│─── HTTP / SDK / ... ────→│
+  │    {name, arguments}       │                          │
+  │                            │←── respuesta ────────────│
+  │←── {content:[{text}]} ─────│                          │
 ```
 
-El transporte es stdio (pipe de subproceso) o HTTP/SSE. El proxy intercepta el lado izquierdo de este diagrama.
+El transporte habitual es stdio (el cliente lanza el servidor como subproceso). También existe HTTP/SSE para servidores remotos.
