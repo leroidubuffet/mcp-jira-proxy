@@ -34,7 +34,11 @@ from datetime import datetime
 
 LOG_PATH = os.environ.get("MCP_PROXY_LOG", "/tmp/mcp_proxy.log")
 REAL_CMD = os.environ.get("MCP_PROXY_CMD", "")
-REAL_ARGS = os.environ.get("MCP_PROXY_ARGS", "").split() if os.environ.get("MCP_PROXY_ARGS") else []
+# MCP_PROXY_ARGS puede ser una ruta con espacios — usamos shlex para parsearla
+# correctamente en lugar de split() simple que rompería las rutas.
+import shlex
+_raw_args = os.environ.get("MCP_PROXY_ARGS", "")
+REAL_ARGS = shlex.split(_raw_args) if _raw_args else []
 
 _log_lock = threading.Lock()
 _pending: dict[int | str, tuple[str, str]] = {}  # id → (method, tool_name)
