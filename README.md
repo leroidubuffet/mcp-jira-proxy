@@ -5,7 +5,7 @@ En este repositorio hay dos archivos Python sin dependencias externas.
 | Archivo | Que hace |
 |---|---|
 | `jira_mcp_server.py` | Servidor MCP que conecta cualquier agente IA con la API de Jira Cloud |
-| `mcp_inspector.py` | Proxy demostrativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
+| `mcp_inspector.py` | Inspector MCP que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
 
 ---
 
@@ -81,7 +81,7 @@ Con inspector, Claude Code lanza el inspector, y el inspector lanza el servidor 
 ```
 Claude Code  ────────────────>  mcp_inspector.py  ──>  jira_mcp_server.py  ->  Jira
              (entrada           (lanzado por        (lanzado por
-             "jira-inspector"    Claude Code)         el proxy)
+             "jira-inspector"    Claude Code)         el inspector)
              en ~/.claude.json)
                     |
                     v
@@ -89,7 +89,7 @@ Claude Code  ────────────────>  mcp_inspector.py
              (log explicado)
 ```
 
-El proxy no modifica ningun mensaje. El agente recibe exactamente las mismas respuestas.
+El inspector no modifica ningun mensaje. El agente recibe exactamente las mismas respuestas.
 
 ### Configuracion en Claude Code
 
@@ -112,9 +112,9 @@ El proxy no modifica ningun mensaje. El agente recibe exactamente las mismas res
 }
 ```
 
-Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-proxy` coexisten en el archivo, Claude Code usara el servidor directo y el proxy no recibira ningun trafico.
+Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-inspector` coexisten en el archivo, Claude Code usara el servidor directo y el inspector no recibira ningun trafico.
 
-**Paso 2.** Anade la entrada del inspector en su lugar. Necesita las mismas variables de entorno que tenia el servidor directo (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`), mas tres variables propias del proxy (`MCP_PROXY_CMD`, `MCP_PROXY_ARGS`, `MCP_PROXY_LOG`):
+**Paso 2.** Anade la entrada del inspector en su lugar. Necesita las mismas variables de entorno que tenia el servidor directo (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`), mas tres variables propias del inspector (`MCP_INSPECTOR_CMD`, `MCP_INSPECTOR_ARGS`, `MCP_INSPECTOR_LOG`):
 
 ```json
 {
@@ -124,9 +124,9 @@ Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-proxy` 
       "command": "python3",
       "args": ["/ruta/absoluta/a/mcp_inspector.py"],
       "env": {
-        "MCP_PROXY_CMD":  "python3",
-        "MCP_PROXY_ARGS": "/ruta/absoluta/a/jira_mcp_server.py",
-        "MCP_PROXY_LOG":  "/tmp/mcp_jira.log",
+        "MCP_INSPECTOR_CMD":  "python3",
+        "MCP_INSPECTOR_ARGS": "/ruta/absoluta/a/jira_mcp_server.py",
+        "MCP_INSPECTOR_LOG":  "/tmp/mcp_jira.log",
         "JIRA_URL":       "https://tu-empresa.atlassian.net",
         "JIRA_EMAIL":     "tu@empresa.com",
         "JIRA_API_TOKEN": "tu-token"
@@ -136,8 +136,8 @@ Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-proxy` 
 }
 ```
 
-> **Rutas con espacios:** si la ruta contiene espacios, escríbela entre comillas simples dentro del valor de `MCP_PROXY_ARGS`:
-> `"MCP_PROXY_ARGS": "'/ruta/con espacios/jira_mcp_server.py'"`
+> **Rutas con espacios:** si la ruta contiene espacios, escríbela entre comillas simples dentro del valor de `MCP_INSPECTOR_ARGS`:
+> `"MCP_INSPECTOR_ARGS": "'/ruta/con espacios/jira_mcp_server.py'"`
 
 **Paso 3.** Reinicia Claude Code.
 
@@ -151,7 +151,7 @@ tail -f /tmp/mcp_jira.log
 
 ```
 ============================================================
-  MCP PROXY -- sesion iniciada 2026-05-29 10:36:27
+  MCP INSPECTOR -- sesion iniciada 2026-05-29 10:36:27
   Servidor real: python3 jira_mcp_server.py
 ============================================================
 
@@ -196,21 +196,21 @@ tail -f /tmp/mcp_jira.log
 
 ### Usar el inspector con otros servidores MCP
 
-El inspector no contiene ningun codigo especifico de Jira. Funciona con cualquier servidor MCP con transporte stdio. Cambia `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y `MCP_PROXY_LOG` para apuntar al servidor que quieras observar:
+El inspector no contiene ningun codigo especifico de Jira. Funciona con cualquier servidor MCP con transporte stdio. Cambia `MCP_INSPECTOR_CMD`, `MCP_INSPECTOR_ARGS` y `MCP_INSPECTOR_LOG` para apuntar al servidor que quieras observar:
 
 ```json
-"MCP_PROXY_CMD":  "uvx",
-"MCP_PROXY_ARGS": "ableton-mcp",
-"MCP_PROXY_LOG":  "/tmp/mcp_ableton.log"
+"MCP_INSPECTOR_CMD":  "uvx",
+"MCP_INSPECTOR_ARGS": "ableton-mcp",
+"MCP_INSPECTOR_LOG":  "/tmp/mcp_ableton.log"
 ```
 
-El proxy es un wrapper por servidor, no un interceptor global. Cada servidor que quieras monitorizar necesita su propia entrada en `mcpServers`.
+El inspector es un wrapper por servidor, no un interceptor global. Cada servidor que quieras monitorizar necesita su propia entrada en `mcpServers`.
 
 ---
 
 ## El protocolo MCP
 
-Lo que el proxy registra es el protocolo MCP en bruto: mensajes JSON-RPC 2.0 intercambiados por stdio. El flujo completo de una sesion:
+Lo que el inspector registra es el protocolo MCP en bruto: mensajes JSON-RPC 2.0 intercambiados por stdio. El flujo completo de una sesion:
 
 ```
 Agente                    Servidor MCP              Sistema externo

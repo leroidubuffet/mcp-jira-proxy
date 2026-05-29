@@ -10,18 +10,18 @@ Uso:
        "command": "python3",
        "args": ["/ruta/a/mcp_inspector.py"],
        "env": {
-         "MCP_PROXY_CMD": "python3",
-         "MCP_PROXY_ARGS": "/ruta/a/jira_mcp_server.py",
-         "MCP_PROXY_LOG": "/tmp/mcp_jira.log",
+         "MCP_INSPECTOR_CMD": "python3",
+         "MCP_INSPECTOR_ARGS": "/ruta/a/jira_mcp_server.py",
+         "MCP_INSPECTOR_LOG": "/tmp/mcp_jira.log",
          ... (resto de env vars del servidor real)
        }
      }
 
   2. En otra terminal: tail -f /tmp/mcp_jira.log
 
-  MCP_PROXY_CMD   comando del servidor real (requerido)
-  MCP_PROXY_ARGS  argumentos separados por espacio (opcional)
-  MCP_PROXY_LOG   ruta del log (por defecto /tmp/mcp_inspector.log)
+  MCP_INSPECTOR_CMD   comando del servidor real (requerido)
+  MCP_INSPECTOR_ARGS  argumentos separados por espacio (opcional)
+  MCP_INSPECTOR_LOG   ruta del log (por defecto /tmp/mcp_inspector.log)
 """
 
 import json
@@ -32,12 +32,12 @@ import threading
 import time
 from datetime import datetime
 
-LOG_PATH = os.environ.get("MCP_PROXY_LOG", "/tmp/mcp_inspector.log")
-REAL_CMD = os.environ.get("MCP_PROXY_CMD", "")
-# MCP_PROXY_ARGS puede ser una ruta con espacios — usamos shlex para parsearla
+LOG_PATH = os.environ.get("MCP_INSPECTOR_LOG", "/tmp/mcp_inspector.log")
+REAL_CMD = os.environ.get("MCP_INSPECTOR_CMD", "")
+# MCP_INSPECTOR_ARGS puede ser una ruta con espacios — usamos shlex para parsearla
 # correctamente en lugar de split() simple que rompería las rutas.
 import shlex
-_raw_args = os.environ.get("MCP_PROXY_ARGS", "")
+_raw_args = os.environ.get("MCP_INSPECTOR_ARGS", "")
 REAL_ARGS = shlex.split(_raw_args) if _raw_args else []
 
 _log_lock = threading.Lock()
@@ -191,7 +191,7 @@ def _explain_response(msg: dict, latency_ms: float | None) -> tuple[str, str, li
 
 
 # ---------------------------------------------------------------------------
-# Threads de proxy
+# Threads del inspector
 # ---------------------------------------------------------------------------
 
 def _forward_claude_to_server(proc: subprocess.Popen, start_times: dict) -> None:
@@ -265,7 +265,7 @@ def _forward_server_to_claude(proc: subprocess.Popen, start_times: dict) -> None
 
 def main() -> None:
     if not REAL_CMD:
-        sys.stderr.write("Error: MCP_PROXY_CMD no configurado\n")
+        sys.stderr.write("Error: MCP_INSPECTOR_CMD no configurado\n")
         sys.exit(1)
 
     cmd = [REAL_CMD] + REAL_ARGS
@@ -273,7 +273,7 @@ def main() -> None:
     # Cabecera del log
     with open(LOG_PATH, "w", encoding="utf-8") as f:
         f.write(f"{'═' * 60}\n")
-        f.write(f"  MCP PROXY — sesión iniciada {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"  MCP INSPECTOR — sesion iniciada {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"  Servidor real: {' '.join(cmd)}\n")
         f.write(f"{'═' * 60}\n")
 
