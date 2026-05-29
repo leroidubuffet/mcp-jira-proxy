@@ -21,7 +21,7 @@ Uso:
 
   MCP_PROXY_CMD   comando del servidor real (requerido)
   MCP_PROXY_ARGS  argumentos separados por espacio (opcional)
-  MCP_PROXY_LOG   ruta del log (por defecto /tmp/mcp_proxy.log)
+  MCP_PROXY_LOG   ruta del log (por defecto /tmp/mcp_inspector.log)
 """
 
 import json
@@ -32,7 +32,7 @@ import threading
 import time
 from datetime import datetime
 
-LOG_PATH = os.environ.get("MCP_PROXY_LOG", "/tmp/mcp_proxy.log")
+LOG_PATH = os.environ.get("MCP_PROXY_LOG", "/tmp/mcp_inspector.log")
 REAL_CMD = os.environ.get("MCP_PROXY_CMD", "")
 # MCP_PROXY_ARGS puede ser una ruta con espacios — usamos shlex para parsearla
 # correctamente en lugar de split() simple que rompería las rutas.
