@@ -141,14 +141,15 @@ def tool_get_issue(args: dict) -> str:
 
 def tool_search_issues(args: dict) -> str:
     max_r = min(max(1, args.get("max_results", 20)), 50)
-    data = _jira("POST", "/search", body={
+    data = _jira("POST", "/search/jql", body={
         "jql": args["jql"], "maxResults": max_r,
         "fields": ["summary", "status", "assignee", "priority", "issuetype"],
     })
     issues = data.get("issues", [])
     if not issues:
         return f"Sin resultados para: {args['jql']}"
-    lines = [f"Resultados ({len(issues)} de {data.get('total', '?')}):"]
+    total = data.get("total", data.get("maxResults", len(issues)))
+    lines = [f"Resultados ({len(issues)} de {total}):"]
     for issue in issues:
         f = issue["fields"]
         lines.append(

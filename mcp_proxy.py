@@ -97,7 +97,8 @@ def _explain_request(msg: dict) -> tuple[str, str, list[str]]:
         lines += [
             f"Cliente: {client.get('name', '?')} {client.get('version', '')}",
             f"Versión del protocolo solicitada: {proto}",
-            "El servidor responderá con sus capacidades y las tools que expone.",
+            "El servidor responderá confirmando qué tipos de primitivas soporta (tools, resources, prompts).",
+            "Las tools concretas se piden en un mensaje tools/list separado.",
         ]
 
     elif method == "tools/list":
@@ -146,10 +147,19 @@ def _explain_response(msg: dict, latency_ms: float | None) -> tuple[str, str, li
     if method == "initialize":
         info = result.get("serverInfo", {})
         caps = result.get("capabilities", {})
+        _cap_labels = {
+            "tools":     "tools (Claude puede llamar funciones)",
+            "resources": "resources (Claude puede leer datos como ficheros o URIs)",
+            "prompts":   "prompts (el servidor ofrece plantillas de prompt)",
+            "logging":   "logging (el servidor envía logs estructurados)",
+        }
+        cap_desc = ", ".join(
+            _cap_labels.get(k, k) for k in caps.keys()
+        ) or "ninguna declarada"
         lines = [
             f"✅ Servidor identificado: {info.get('name', '?')} v{info.get('version', '?')}",
             f"Protocolo acordado: {result.get('protocolVersion', '?')}",
-            f"Capacidades: {', '.join(caps.keys()) or 'ninguna declarada'}",
+            f"Capacidades: {cap_desc}",
             "A partir de aquí Claude puede pedir el catálogo y llamar tools.",
         ]
 
