@@ -180,12 +180,23 @@ def _explain_response(msg: dict, latency_ms: float | None) -> tuple[str, str, li
 # Threads de proxy
 # ---------------------------------------------------------------------------
 
-def _forward_claude_to_server(proc: subprocess.Popen) -> None:
+def _forward_claude_to_server(proc: subprocess.Popen, start_times: dict) -> None:
     """Lee de stdin (Claude), explica, y reenvía al servidor real."""
-    for raw_line in sys.stdin:
+    while True:
+        raw_line = sys.stdin.readline()
+        if not raw_line:
+            break
         raw_line = raw_line.strip()
         if not raw_line:
             continue
+
+        # Registrar tiempo de inicio para calcular latencia en la respuesta
+        try:
+            msg = json.loads(raw_line)
+            if msg.get("id") is not None:
+                start_times[msg["id"]] = time.time()
+        except Exception:
+            pass
 
         # Reenviar al servidor real siempre
         try:
@@ -207,7 +218,10 @@ def _forward_claude_to_server(proc: subprocess.Popen) -> None:
 
 def _forward_server_to_claude(proc: subprocess.Popen, start_times: dict) -> None:
     """Lee del servidor real, explica, y reenvía a stdout (Claude)."""
-    for raw_line in proc.stdout:
+    while True:
+        raw_line = proc.stdout.readline()
+        if not raw_line:
+            break
         raw_line = raw_line.strip()
         if not raw_line:
             continue
@@ -263,7 +277,7 @@ def main() -> None:
 
     t_in = threading.Thread(
         target=_forward_claude_to_server,
-        args=(proc,),
+        args=(proc, start_times),
         daemon=True,
     )
     t_out = threading.Thread(
