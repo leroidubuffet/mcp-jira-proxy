@@ -95,7 +95,7 @@ Busca el bloque `mcpServers`. Cada entrada tiene este aspecto:
 
 Los valores de `command`, `args` y `env` de esa entrada son los que necesitas para configurar el proxy: se copian en `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y en el bloque `env` del proxy respectivamente.
 
-Añade una nueva entrada para el proxy **sin eliminar la original** — así puedes usar ambos a la vez:
+**Importante:** si tienes `jira` y `jira-proxy` activos al mismo tiempo, Claude elegirá el servidor directo y el proxy no se usará. Para que el tráfico pase por el proxy, elimina la entrada `jira` de `mcpServers` y deja solo `jira-proxy`:
 
 ```json
 {
@@ -154,13 +154,14 @@ tail -f /tmp/mcp_jira.log
   HANDSHAKE — Claude se conecta al servidor
   Cliente: Claude Code 1.0
   Versión del protocolo solicitada: 2024-11-05
-  El servidor responderá con sus capacidades y las tools que expone.
+  El servidor responderá confirmando qué tipos de primitivas soporta (tools, resources, prompts).
+  Las tools concretas se piden en un mensaje tools/list separado.
 
 ────────────────────────────────────────────────────────────
 [10:36:27.143]  ←  Servidor → Claude   [respuesta a initialize]
   ✅ Servidor identificado: jira v1.0.0
   Protocolo acordado: 2024-11-05
-  Capacidades: tools
+  Capacidades: tools (Claude puede llamar funciones)
   A partir de aquí Claude puede pedir el catálogo y llamar tools.
 
 ────────────────────────────────────────────────────────────
