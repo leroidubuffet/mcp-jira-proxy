@@ -5,7 +5,7 @@ Dos archivos Python. Cero dependencias externas.
 | Archivo | Que hace |
 |---|---|
 | `jira_mcp_server.py` | Servidor MCP que conecta cualquier agente IA con la API de Jira Cloud |
-| `mcp_proxy.py` | Proxy educativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
+| `mcp_inspector.py` | Proxy educativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
 
 ---
 
@@ -58,7 +58,7 @@ Reinicia Claude Code. Las herramientas apareceran como `mcp__jira__get_issue`, `
 
 ---
 
-## mcp_proxy.py
+## mcp_inspector.py
 
 ### Para que sirve
 
@@ -76,7 +76,7 @@ Claude Code  ──────────────────────�
 Con proxy, Claude Code lanza el proxy, y el proxy lanza el servidor real:
 
 ```
-Claude Code  ────────────>  mcp_proxy.py  ──>  jira_mcp_server.py  ->  Jira
+Claude Code  ────────────>  mcp_inspector.py  ──>  jira_mcp_server.py  ->  Jira
              (entrada         (lanzado por        (lanzado por
              "jira-proxy"     Claude Code)         el proxy)
              en ~/.claude.json)
@@ -119,7 +119,7 @@ Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-proxy` 
     "jira-proxy": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/ruta/absoluta/a/mcp_proxy.py"],
+      "args": ["/ruta/absoluta/a/mcp_inspector.py"],
       "env": {
         "MCP_PROXY_CMD":  "python3",
         "MCP_PROXY_ARGS": "/ruta/absoluta/a/jira_mcp_server.py",

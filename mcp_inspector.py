@@ -1,23 +1,23 @@
 """
-Proxy MCP educativo — se interpone entre Claude y cualquier servidor MCP,
+Inspector MCP educativo: se interpone entre Claude y cualquier servidor MCP,
 deja pasar todo sin modificarlo y escribe un log explicado en lenguaje natural.
 
 Uso:
-  1. Configura el proxy en ~/.claude.json en lugar del servidor real:
+  1. Configura el inspector en ~/.claude.json en lugar del servidor real:
 
-     "jira-proxy": {
+     "jira-inspector": {
        "type": "stdio",
        "command": "python3",
-       "args": ["/ruta/a/mcp_proxy.py"],
+       "args": ["/ruta/a/mcp_inspector.py"],
        "env": {
          "MCP_PROXY_CMD": "python3",
          "MCP_PROXY_ARGS": "/ruta/a/jira_mcp_server.py",
-         "MCP_PROXY_LOG": "/tmp/mcp_proxy.log",
+         "MCP_PROXY_LOG": "/tmp/mcp_jira.log",
          ... (resto de env vars del servidor real)
        }
      }
 
-  2. En otra terminal: tail -f /tmp/mcp_proxy.log
+  2. En otra terminal: tail -f /tmp/mcp_jira.log
 
   MCP_PROXY_CMD   comando del servidor real (requerido)
   MCP_PROXY_ARGS  argumentos separados por espacio (opcional)
