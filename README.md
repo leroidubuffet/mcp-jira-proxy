@@ -1,33 +1,35 @@
-# mcp-jira-proxy
+# mcp-jira-inspector
 
-Dos archivos Python. Cero dependencias externas.
+En este repositorio hay dos archivos Python sin dependencias externas.
 
 | Archivo | Que hace |
 |---|---|
 | `jira_mcp_server.py` | Servidor MCP que conecta cualquier agente IA con la API de Jira Cloud |
-| `mcp_inspector.py` | Proxy educativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
+| `mcp_inspector.py` | Proxy demostrativo que se interpone entre el agente y cualquier servidor MCP y escribe un log explicado de cada mensaje |
 
 ---
 
 ## jira_mcp_server.py
 
+Se trata de un servidor MCP que da al agente la capacidad de interactuar con Jira a través de la API de Jira Cloud.
+
 ### Herramientas disponibles
 
-| Tool | Descripcion |
+| Tool | Descripción |
 |---|---|
-| `get_issue` | Detalle completo de un issue |
-| `search_issues` | Busqueda con JQL |
-| `get_my_issues` | Issues asignados al usuario autenticado |
-| `create_issue` | Crea una Task, Story, Epic... |
-| `add_comment` | Anade un comentario |
-| `transition_issue` | Mueve un issue a otro estado |
-| `update_issue` | Actualiza titulo, descripcion, prioridad o asignado |
-| `get_projects` | Lista los proyectos accesibles |
+| `get_issue` | Obtiene el detalle completo de un issue |
+| `search_issues` | Búsqueda con JQL |
+| `get_my_issues` | Obtiene issues asignados al usuario autenticado |
+| `create_issue` | Crea una Task, Story, Epic… |
+| `add_comment` | Añade un comentario |
+| `transition_issue` | Cambia el estado de un issue |
+| `update_issue` | Actualiza el título, la descripción, la prioridad o a quien está asignado un issue |
+| `get_projects` | Obtiene los proyectos accesibles |
 | `get_issue_comments` | Lee los comentarios de un issue |
 
 ### Requisitos
 
-Python 3.10+. No requiere `pip install`.
+Python 3.10+.
 
 > **macOS:** el servidor carga automaticamente los certificados SSL del sistema desde `/etc/ssl/cert.pem`, resolviendo el problema habitual del instalador oficial de Python.
 
@@ -53,6 +55,7 @@ Abre `~/.claude.json` y anade la seccion `mcpServers` con esta entrada:
   }
 }
 ```
+Modifica también la ruta y la URL en `"args"` y `"JIRA_URL"`.
 
 Reinicia Claude Code. Las herramientas apareceran como `mcp__jira__get_issue`, `mcp__jira__create_issue`, etc.
 
@@ -66,19 +69,19 @@ Permite ver en tiempo real que mensajes intercambian el agente y un servidor MCP
 
 ### Como funciona
 
-Sin proxy, Claude Code lanza y habla directamente con el servidor MCP:
+Claude Code lanza y habla directamente con el servidor MCP:
 
 ```
 Claude Code  ──────────────────────────────>  jira_mcp_server.py  ->  Jira
              (entrada "jira" en ~/.claude.json)
 ```
 
-Con proxy, Claude Code lanza el proxy, y el proxy lanza el servidor real:
+Con inspector, Claude Code lanza el inspector, y el inspector lanza el servidor real:
 
 ```
-Claude Code  ────────────>  mcp_inspector.py  ──>  jira_mcp_server.py  ->  Jira
-             (entrada         (lanzado por        (lanzado por
-             "jira-proxy"     Claude Code)         el proxy)
+Claude Code  ────────────────>  mcp_inspector.py  ──>  jira_mcp_server.py  ->  Jira
+             (entrada           (lanzado por        (lanzado por
+             "jira-inspector"    Claude Code)         el proxy)
              en ~/.claude.json)
                     |
                     v
@@ -111,12 +114,12 @@ El proxy no modifica ningun mensaje. El agente recibe exactamente las mismas res
 
 Borra esa entrada completamente. Si la entrada `jira` y la entrada `jira-proxy` coexisten en el archivo, Claude Code usara el servidor directo y el proxy no recibira ningun trafico.
 
-**Paso 2.** Anade la entrada del proxy en su lugar. Necesita las mismas variables de entorno que tenia el servidor directo (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`), mas tres variables propias del proxy (`MCP_PROXY_CMD`, `MCP_PROXY_ARGS`, `MCP_PROXY_LOG`):
+**Paso 2.** Anade la entrada del inspector en su lugar. Necesita las mismas variables de entorno que tenia el servidor directo (`JIRA_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`), mas tres variables propias del proxy (`MCP_PROXY_CMD`, `MCP_PROXY_ARGS`, `MCP_PROXY_LOG`):
 
 ```json
 {
   "mcpServers": {
-    "jira-proxy": {
+    "jira-inspector": {
       "type": "stdio",
       "command": "python3",
       "args": ["/ruta/absoluta/a/mcp_inspector.py"],
@@ -191,9 +194,9 @@ tail -f /tmp/mcp_jira.log
   310 ms
 ```
 
-### Usar el proxy con otros servidores MCP
+### Usar el inspector con otros servidores MCP
 
-El proxy no contiene ningun codigo especifico de Jira. Funciona con cualquier servidor MCP con transporte stdio. Cambia `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y `MCP_PROXY_LOG` para apuntar al servidor que quieras observar:
+El inspector no contiene ningun codigo especifico de Jira. Funciona con cualquier servidor MCP con transporte stdio. Cambia `MCP_PROXY_CMD`, `MCP_PROXY_ARGS` y `MCP_PROXY_LOG` para apuntar al servidor que quieras observar:
 
 ```json
 "MCP_PROXY_CMD":  "uvx",
